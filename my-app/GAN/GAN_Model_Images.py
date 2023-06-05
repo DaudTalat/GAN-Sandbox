@@ -15,82 +15,20 @@ from keras.layers import Flatten
 from keras.layers import Dense
 from keras.layers import Conv2D
 from keras.layers import Conv2DTranspose
-from keras.models import Sequential 
+from keras.models import Sequential
 from keras.optimizers import Adam
 from keras.datasets import cifar10
 import numpy as np
 import matplotlib.pyplot as plt
 
 saved_image_id = 0 # Need to store this as a static to assign IDs
+epo_ck_max = 0 # We need to use this to increment our ck over sessions
 
 def main():
-    gen, descrim, GAN = export_models()
+    gen, discrim, GAN = export_models()
+    #train(gen, discrim, GAN, 29000, 32, 100, 200, 100)
 
-# The train function is responsible for training the 
-def train(generator : Sequential, discriminator: Sequential, GAN : Sequential, epoch, batch=32, output_interval=250, latent_space_dim=100): 
-    # Use Cifar Dataset for priminary training
-    (training_images, _), (_, _) =  cifar10.load_data()
-
-    # Calculate batches for each epoch
-    epoch_batch_size = int(training_images[0] // batch) # Note that we care about 0 dim since each column represents a feature value, not row.
-
-    real_lables = np.ones((batch), 1)
-    generated_lables = np.ones((batch, 1))
-
-    for epo in range(epoch):
-        for i in range(epoch_batch_size):
-
-            # Descriminator loss refers to real image loss
-            # GAN loss refers to how well generator can fool descriminator
-
-            # We need to pass generative noise as our latent space to make random predictions
-            gen_noise = np.random.normal(0, 1, (batch, latent_space_dim))
-            gen_images = generator.predict(gen_noise)
-
-            # We need batch indices for the size allotted
-            batch_indices = np.random.choice(training_images.shape[0], size=batch, replace=False) ## --> DEV NOTE: THIS LINE MIGHT CAUSE A BUG ##
-            batch_images = training_images[batch_indices]
-
-            # Train
-            discrimator_loss = 0.5 * np.add(discriminator.train_on_batch(batch_images, real_lables), discriminator.train_on_batch(gen_images, generated_lables))
-
-            gan_noise = np.random.normal(0, 1, (batch, latent_space_dim))
-            gan_loss = GAN.train_on_batch(gan_noise, real_lables) # now we test performance 
-
-            print("This is epoch {}, the descriminator loss is {}, and the GAN loss is {}".format(epo, discrimator_loss, gan_loss))
-        
-            if epo % output_interval == 0:
-                save_images(generator)
-
-# This function will be used to generate a new image for each output interval in the training step
-def save_images(generator : Sequential):
-    global saved_image_id
-
-    print(saved_image_id)
-
-    random_vectors = np.random.normal(0, 1, (4 * 4, 100)) # Rows * Cols = Batch_Size, 100 Latent Space Dim
-
-    # Use random latent space vectors to "predict" images
-    gen_model_imgs = generator.predict(random_vectors)
-
-    saved_image_id += 1
-
-    gen_model_imgs = (gen_model_imgs + 1) * 0.5
-    
-    counter = 0 
-    # Matplot used to make grid of subplots for generated image (e.g. 4x4 in our case)
-    figure, axis = plt.subplots(4, 4)
-
-    for i in range(4):
-        for j in range(4):
-            axis[i, j].imshow(gen_model_imgs[counter])
-            axis[i, j].axis('off') # Just want images, no axis nums
-            counter += 1 # next image (on 4x4 grid)
-            
-    figure.savefig("my-app/GAN/outputs/%s.png" % saved_image_id)
-
-def export_models():
-
+def export_models(checkpoint_path=""):
     # Adjust these values for higher or lower quality of image
     img_x_dim = 128
     img_y_dim = 128
@@ -144,43 +82,168 @@ def export_models():
     gen_model.add(Conv2D(filters=3, kernel_size=(4,4), activation="tanh", padding="same"))
 
     # Create Descriminator
-    descrim_model = Sequential()
+    discrim_model = Sequential()
 
     # Input Layer (Generated Image)
-    descrim_model.add(Conv2D(filters=64, kernel_size=(4,4), padding="same", input_shape=img_shape))
-    descrim_model.add(LeakyReLU(alpha=0.2))
+    discrim_model.add(Conv2D(filters=64, kernel_size=(4,4), padding="same", input_shape=img_shape))
+    discrim_model.add(LeakyReLU(alpha=0.2))
 
     # Hidden Layer (Extract Features)
-    descrim_model.add(Conv2D(filters=128, kernel_size=(4,4), padding="same"))
-    descrim_model.add(LeakyReLU(alpha=0.2))
+    discrim_model.add(Conv2D(filters=128, kernel_size=(4,4), padding="same"))
+    discrim_model.add(LeakyReLU(alpha=0.2))
 
-    descrim_model.add(Conv2D(filters=128, kernel_size=(4,4), padding="same"))
-    descrim_model.add(LeakyReLU(alpha=0.2))
+    discrim_model.add(Conv2D(filters=128, kernel_size=(4,4), padding="same"))
+    discrim_model.add(LeakyReLU(alpha=0.2))
 
-    descrim_model.add(Conv2D(filters=128, kernel_size=(4,4), padding="same"))
-    descrim_model.add(LeakyReLU(alpha=0.2))
+    discrim_model.add(Conv2D(filters=256, kernel_size=(4,4), padding="same"))
+    discrim_model.add(LeakyReLU(alpha=0.2))
 
     # Output (Flatten)
-    descrim_model.add(Flatten())
-    descrim_model.add(Dropout(0.4))
-    descrim_model.add(Dense(units=1, activation="sigmoid"))
-
+    discrim_model.add(Flatten())
+    discrim_model.add(Dropout(0.4))
+    discrim_model.add(Dense(units=1, activation="sigmoid"))
 
     # COMPILE
-    descrim_model.compile(loss="binary_crossentropy", optimizer=Adam(learning_rate=0.0002), metrics=["accuracy"])
+    discrim_model.compile(loss="binary_crossentropy", optimizer=Adam(learning_rate=0.0002), metrics=["accuracy"])
 
     # Make GAN
     GAN_model = Sequential()
-    descrim_model.trainable = False # We don't want to train descriminator while training GAN
+    discrim_model.trainable = False # We don't want to train descriminator while training GAN
 
     # Assemble 
     GAN_model.add(gen_model)
-    GAN_model.add(descrim_model)
+    GAN_model.add(discrim_model)
 
     GAN_model.compile(loss="binary_crossentropy", optimizer=Adam(learning_rate=0.0002), metrics=["accuracy"])
 
     print("Models Exported")
-    return gen_model, descrim_model, GAN_model
+
+    load_checkpoint(gen_model, discrim_model, GAN_model, checkpoint_path)
+
+    # Debug
+    # print(gen_model.summary())
+    # print(discrim_model.summary())
+    return gen_model, discrim_model, GAN_model
+
+# This function will be used to load in our weights so that we can save model over severall runs (i.e. checkpoint our progress)
+# 1. Checkpoint name specified os.path.join(os.getcwd() + "/my-app/GAN/checkpoints", "EdwardHopper.h5")
+# 2. There is no checkpoints (produce new)
+# 3. Use highest increment of checkpoint
+def load_checkpoint(generator: Sequential, discriminator: Sequential, GAN: Sequential, checkpoint_path=""):
+
+    if checkpoint_path == "": # If this is not triggered we are using a specific ck (e.g. EdwardHopper.h5)
+
+        greatest = -1
+
+        for ck in os.listdir(os.getcwd() + "/my-app/GAN/checkpoints"):
+
+            ck_num = int(ck.split("_")[1].strip(".h5"))
+            if ck_num > greatest:
+                greatest = ck_num
+
+        if greatest == -1:
+            return # Produce new ck (there are none)
+        
+        else:
+            checkpoint_path = os.getcwd() + "/my-app/GAN/checkpoints/checkpoint_{}.h5".format(greatest) # Use highest increment of ck
+            epo_ck_max = greatest
+
+    else: 
+        checkpoint_path = os.getcwd() + "/my-app/GAN/checkpoints/{}".format(checkpoint_path) # Use highest increment of ck
+    
+    GAN.load_weights(checkpoint_path)
+    generator.set_weights(GAN.layers[0].get_weights())
+    discriminator.set_weights(GAN.layers[1].get_weights())
+    save_images(generator)
+
+# The train function is responsible for training the 
+def train(generator : Sequential, discriminator: Sequential, GAN : Sequential, epoch, batch=32, latent_space_dim=100, output_interval=250, checkpoint_interval=1000): 
+    
+    checkpoint_dir = os.path.join(os.getcwd(), "my-app/GAN/checkpoints/")
+
+    real_lables = np.ones((batch, 1))
+    generated_lables = np.zeros((batch, 1))
+
+    resized_img_dir = os.path.join(os.getcwd(), "my-app/GAN/resized_images/") # make sure images are sized to 64x64
+
+    training_images = []
+
+    # Encode our img files with NumPy
+    for img_file in os.listdir(resized_img_dir):
+        img_path = os.path.join(resized_img_dir, img_file)
+        img = cv.imread(img_path)
+        img = cv.cvtColor(img, cv.COLOR_BGR2RGB)
+        training_images.append(np.asarray(img))
+        
+    training_images = np.array(training_images)
+
+    # This is a normalization technique needed for convolution (praise COMP4102!!!) [-1, 1] better convergence
+    training_images = (training_images - 127.5) / 127.5
+
+    # Calculate batches for each epoch
+    epoch_batch_size = int(training_images.shape[0] / batch) # Note that we care about 0 dim since each column represents a feature value, not row.
+
+    for epo in range(epoch):
+        for i in range(epoch_batch_size):
+
+            # Descriminator loss refers to real image loss
+            # GAN loss refers to how well generator can fool descriminator
+
+            # We need to pass generative noise as our latent space to make random predictions
+            gen_noise = np.random.normal(0, 1, (batch, latent_space_dim))
+            gen_images = generator.predict(gen_noise)
+
+            # We need batch indices for the size allotted
+            batch_indices = np.random.choice(training_images.shape[0], size=batch, replace=False) ## --> DEV NOTE: THIS LINE MIGHT CAUSE A BUG ##
+            batch_images = training_images[batch_indices]
+
+            # Train
+            discrimator_loss_real = discriminator.train_on_batch(batch_images, real_lables)
+            discriminator_loss_gen = discriminator.train_on_batch(gen_images, generated_lables)
+
+            gan_noise = np.random.normal(0, 1, (batch, latent_space_dim))
+
+            gan_loss = GAN.train_on_batch(gan_noise, real_lables) # now we test performance 
+
+            print("This is epoch {}, the descriminator loss is {}, and the GAN loss is {}".format(epo, discrimator_loss_real, gan_loss))
+
+        # 9 photos grid
+        if epo % output_interval == 0:
+            save_images(generator)
+
+        # checkpoint
+        if epo % checkpoint_interval == 0:
+            checkpoint_path = os.path.join(checkpoint_dir, "checkpoint_{}.h5".format(epo + epo_ck_max))
+            GAN.save_weights(checkpoint_path)
+            print("Checkpoint Saved at epoch {}".format(epo))
+
+# This function will be used to generate a new image for each output interval in the training step
+def save_images(generator : Sequential):
+    global saved_image_id
+
+    print(saved_image_id)
+
+    random_vectors = np.random.normal(0, 1, (4 * 4, 100)) # Rows * Cols = Batch_Size, 100 Latent Space Dim
+
+    # Use random latent space vectors to "predict" images
+    gen_model_imgs = generator.predict(random_vectors)
+
+    saved_image_id += 1
+
+    gen_model_imgs = (gen_model_imgs + 1) * 0.5
+    
+    counter = 0 
+    # Matplot used to make grid of subplots for generated image (e.g. 4x4 in our case)
+    figure, axis = plt.subplots(4, 4)
+
+    for i in range(4):
+        for j in range(4):
+            axis[i, j].imshow(gen_model_imgs[counter])
+            axis[i, j].axis('off') # Just want images, no axis nums
+            counter += 1 # next image (on 4x4 grid)
+            
+    figure.savefig("my-app/GAN/outputs/%s.png" % saved_image_id)
+    
 
 if __name__ == '__main__':
     main()
