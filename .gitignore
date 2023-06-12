@@ -22,8 +22,14 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# Node Modules
+/my-app/node_modules
+
 # Training Data
-/GAN/training
-/GAN/resized_images
-/GAN/outputs
-/GAN/checkpoints
+/flask-server/GAN/training
+/flask-server/GAN/resized_images
+/flask-server/GAN/outputs
+/flask-server/GAN/checkpoints
+/flask-server/GAN/gen_images
+/flask-server/GAN/outputs
+/flask-server/GAN/__pycache__/

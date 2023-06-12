@@ -17,16 +17,13 @@ from keras.layers import Conv2D
 from keras.layers import Conv2DTranspose
 from keras.models import Sequential
 from keras.optimizers import Adam
-from keras.datasets import cifar10
 import numpy as np
+import matplotlib
+matplotlib.use('agg')
 import matplotlib.pyplot as plt
 
-saved_image_id = 0 # Need to store this as a static to assign IDs
-epo_ck_max = 0 # We need to use this to increment our ck over sessions
 
-def main():
-    gen, discrim, GAN = export_models()
-    #train(gen, discrim, GAN, 29000, 32, 100, 200, 100)
+saved_image_id = 0 # Need to store this as a static to assign IDs
 
 def export_models(checkpoint_path=""):
     # Adjust these values for higher or lower quality of image
@@ -36,8 +33,10 @@ def export_models(checkpoint_path=""):
     img_dims = (img_x_dim, img_y_dim) # Image resolution
 
     # Relative Paths
-    img_path = os.path.join(os.getcwd(), "my-app/GAN/training/")
-    resized_img_dir = os.path.join(os.getcwd(), "my-app/GAN/resized_images/") # make sure images are sized to 64x64
+
+    print(os.path.join(os.getcwd(), "flask-server/GAN/training/"))
+    img_path = os.path.join(os.getcwd(), "flask-server/GAN/training/")
+    resized_img_dir = os.path.join(os.getcwd(), "flask-server/GAN/resized_images/") # make sure images are sized to 64x64
 
     index = 0
     # Lets ignore any none image files (or non-supported image files)
@@ -126,16 +125,17 @@ def export_models(checkpoint_path=""):
     return gen_model, discrim_model, GAN_model
 
 # This function will be used to load in our weights so that we can save model over severall runs (i.e. checkpoint our progress)
-# 1. Checkpoint name specified os.path.join(os.getcwd() + "/my-app/GAN/checkpoints", "EdwardHopper.h5")
+# 1. Checkpoint name specified os.path.join(os.getcwd() + "/flask-server/GAN/checkpoints", "EdwardHopper.h5")
 # 2. There is no checkpoints (produce new)
 # 3. Use highest increment of checkpoint
 def load_checkpoint(generator: Sequential, discriminator: Sequential, GAN: Sequential, checkpoint_path=""):
+    global epo_ck_max
 
     if checkpoint_path == "": # If this is not triggered we are using a specific ck (e.g. EdwardHopper.h5)
 
         greatest = -1
 
-        for ck in os.listdir(os.getcwd() + "/my-app/GAN/checkpoints"):
+        for ck in os.listdir(os.getcwd() + "/flask-server/GAN/checkpoints"):
 
             ck_num = int(ck.split("_")[1].strip(".h5"))
             if ck_num > greatest:
@@ -145,26 +145,25 @@ def load_checkpoint(generator: Sequential, discriminator: Sequential, GAN: Seque
             return # Produce new ck (there are none)
         
         else:
-            checkpoint_path = os.getcwd() + "/my-app/GAN/checkpoints/checkpoint_{}.h5".format(greatest) # Use highest increment of ck
+            checkpoint_path = os.getcwd() + "/flask-server/GAN/checkpoints/checkpoint_{}.h5".format(greatest) # Use highest increment of ck
             epo_ck_max = greatest
 
     else: 
-        checkpoint_path = os.getcwd() + "/my-app/GAN/checkpoints/{}".format(checkpoint_path) # Use highest increment of ck
+        checkpoint_path = os.getcwd() + "/flask-server/GAN/checkpoints/{}".format(checkpoint_path) # Use highest increment of ck
     
     GAN.load_weights(checkpoint_path)
     generator.set_weights(GAN.layers[0].get_weights())
     discriminator.set_weights(GAN.layers[1].get_weights())
-    save_images(generator)
 
 # The train function is responsible for training the 
 def train(generator : Sequential, discriminator: Sequential, GAN : Sequential, epoch, batch=32, latent_space_dim=100, output_interval=250, checkpoint_interval=1000): 
     
-    checkpoint_dir = os.path.join(os.getcwd(), "my-app/GAN/checkpoints/")
+    checkpoint_dir = os.path.join(os.getcwd(), "flask-server/GAN/checkpoints/")
 
     real_lables = np.ones((batch, 1))
     generated_lables = np.zeros((batch, 1))
 
-    resized_img_dir = os.path.join(os.getcwd(), "my-app/GAN/resized_images/") # make sure images are sized to 64x64
+    resized_img_dir = os.path.join(os.getcwd(), "flask-server/GAN/resized_images/") # make sure images are sized to 64x64
 
     training_images = []
 
@@ -219,19 +218,33 @@ def train(generator : Sequential, discriminator: Sequential, GAN : Sequential, e
 
 # This function will be used to generate a new image for each output interval in the training step
 def save_images(generator : Sequential):
-    global saved_image_id
-
-    print(saved_image_id)
 
     random_vectors = np.random.normal(0, 1, (4 * 4, 100)) # Rows * Cols = Batch_Size, 100 Latent Space Dim
 
     # Use random latent space vectors to "predict" images
     gen_model_imgs = generator.predict(random_vectors)
+    gen_model_imgs = (gen_model_imgs + 1) * 0.5 # Rescale images [-1,1] -> [0,1]
 
-    saved_image_id += 1
+    # Get max for generated images
+    greatest = 0
 
-    gen_model_imgs = (gen_model_imgs + 1) * 0.5
-    
+    for output in os.listdir(os.getcwd() + "/flask-server/GAN/gen_images"):
+        output_num = int(output.split(".")[0])
+        if output_num > greatest:
+            greatest = output_num
+
+    # Save Images (1 .. 5)
+    for i in range(5):
+        plt.imsave(os.getcwd() + "/flask-server/GAN/gen_images/{}.png".format(greatest + i + 1), gen_model_imgs[i])
+
+    # Get max for generation images
+    greatest = 0
+
+    for output in os.listdir(os.getcwd() + "/flask-server/GAN/outputs"):
+        output_num = int(output.split(".")[0])
+        if output_num > greatest:
+            greatest = output_num
+ 
     counter = 0 
     # Matplot used to make grid of subplots for generated image (e.g. 4x4 in our case)
     figure, axis = plt.subplots(4, 4)
@@ -242,8 +255,7 @@ def save_images(generator : Sequential):
             axis[i, j].axis('off') # Just want images, no axis nums
             counter += 1 # next image (on 4x4 grid)
             
-    figure.savefig("my-app/GAN/outputs/%s.png" % saved_image_id)
-    
+    # Save Generation
+    figure.savefig("flask-server/GAN/outputs/{}.png".format(greatest + 1))
 
-if __name__ == '__main__':
-    main()
+    # gen_model_imgs[0].savefig("flask-server/GAN/gen_images/{}.png".format("0"))
