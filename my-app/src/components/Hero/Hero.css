@@ -1,0 +1,60 @@
+.hero-container {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.blue-bar {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 5px;
+  height: 100%;
+  background-color: #2d8fff;
+  
+}
+
+.description {
+  /* flex-basis: 10%; */
+  position: relative;
+  width: auto;
+  height: 100px;
+  margin-left: 10px;
+}
+
+.description p {
+  padding-left: 20px;
+  color: #fff;
+  font-size: 20px;
+}
+
+.heading {
+  font-size: 69px;
+  font-weight: 900;
+  background: linear-gradient(
+    45deg,
+    #2d8fff 30%,
+    #2d5eff 45%,
+    #2d5eff 55%,
+    #2d8fff 70%
+  );
+  color: transparent;
+  background-clip: text;
+  background-size: 400% 400%;
+  animation: gradient 10s ease infinite;
+  width: 480px;
+
+  margin-top: 0;
+}
+
+@keyframes gradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}

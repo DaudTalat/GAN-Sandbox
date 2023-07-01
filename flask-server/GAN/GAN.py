@@ -24,6 +24,7 @@ import matplotlib.pyplot as plt
 
 
 saved_image_id = 0 # Need to store this as a static to assign IDs
+epo_ck_max = 0 # Need to declare our checkpoint value for overwrite 
 
 def export_models(checkpoint_path=""):
     # Adjust these values for higher or lower quality of image
@@ -142,7 +143,7 @@ def load_checkpoint(generator: Sequential, discriminator: Sequential, GAN: Seque
                 greatest = ck_num
 
         if greatest == -1:
-            return # Produce new ck (there are none)
+            return # Produce new ck (there are none) | Checkpoint is 0
         
         else:
             checkpoint_path = os.getcwd() + "/flask-server/GAN/checkpoints/checkpoint_{}.h5".format(greatest) # Use highest increment of ck

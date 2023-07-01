@@ -1,0 +1,39 @@
+.left-button {
+    position: absolute;
+    top: 50%;
+    transform: translate(0, -50%);
+    left: 0px;
+    font-size: 65px;
+    color: #13294a;
+    z-index: 1;
+    cursor: pointer;
+    color: #2D8FFF;
+}
+
+.right-button {
+    position: absolute;
+    top: 50%;
+    transform: translate(0, -50%);
+    left: 486px;
+    font-size: 65px;
+    color: #13294a;
+    z-index: 1;
+    cursor: pointer;
+    color: #2D8FFF;
+}
+
+.radio-container {
+    display: flex;
+    justify-content: center;
+}
+
+.radio {
+    color: #2D8FFF;
+    margin: 0 3px;
+    cursor: pointer;
+    font-size: 20px;
+}
+
+.radio.active {
+    color: #fff;
+}

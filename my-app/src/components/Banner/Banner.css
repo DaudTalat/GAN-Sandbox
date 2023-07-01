@@ -1,0 +1,13 @@
+.banner {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #2D5EFF;
+}
+
+.banner .text {
+    color: #f0f5fa;
+    font-weight: 600;
+    font-size: 90%;
+    padding: 0.4rem 0;
+}

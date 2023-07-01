@@ -1,22 +1,30 @@
-import { Link } from 'react-router-dom';
-import Button from '@mui/material/Button';
-import React from 'react';
+import Button from "@mui/material/Button";
+import React from "react";
+import {BrowserRouter as Router, Routes, Route} from "react-router-dom"
+
+import "./App.css";
+import Banner from "./components/Banner/Banner";
+import NavBar from "./components/NavBar/NavBar";
+import Home from "./pages/Home/Home";
 
 function App() {
 
-  function train () {
-    fetch('/train')
+  function train() {
+    fetch("/train");
   }
 
-  function generate () {
-    fetch('/generate')
+  function generate() {
+    fetch("/generate");
+  }
+
+  function get_photo(id) {
+    fetch("/gen_images/" + id);
   }
 
   return (
     <div className="App">
-        <header className="App-header">
-        </header>
-        <Button
+      <header className="App-header"></header>
+      {/* <Button
           variant='outlined'
           color='primary'
           onClick={train}
@@ -33,7 +41,19 @@ function App() {
         >
           Generate
         </Button>
-    </div> 
+        <div className="Canvas-Photo">
+          <GeneratedImage id="1" />
+        </div> */}
+      <div className="container">
+        <Banner />
+        <NavBar />
+          <Router>
+            <Routes>
+              <Route path="/" element={<Home/>} />
+            </Routes>
+          </Router>
+      </div>
+    </div>
   );
 }
 
