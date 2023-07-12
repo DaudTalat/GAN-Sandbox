@@ -1,8 +1,16 @@
+#home {
+    height: 100%;
+    background-image: linear-gradient(155deg,#13294a 0%,#081328 100%);
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+}
+
+
 .home-container {
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 800px;
+    height: 750px;
     width: auto;
     gap: 100px;
     flex-wrap: wrap;

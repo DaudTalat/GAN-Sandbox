@@ -4,7 +4,7 @@ import './Banner.css'
 const Banner = () => {
     return (
         <div className="banner">
-            <p1 className="text">Banner Message Coming Soon!</p1>
+            <p1 className="text">Enhance your workflow with the power of Colab integration!</p1>
         </div>
     );
 };

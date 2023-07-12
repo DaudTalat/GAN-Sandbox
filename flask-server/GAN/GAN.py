@@ -26,6 +26,14 @@ import matplotlib.pyplot as plt
 saved_image_id = 0 # Need to store this as a static to assign IDs
 epo_ck_max = 0 # Need to declare our checkpoint value for overwrite 
 
+def main():
+    gen, descrim, GAN = export_models()
+
+    save_images(gen)
+
+
+
+
 def export_models(checkpoint_path=""):
     # Adjust these values for higher or lower quality of image
     img_x_dim = 128
@@ -248,15 +256,18 @@ def save_images(generator : Sequential):
  
     counter = 0 
     # Matplot used to make grid of subplots for generated image (e.g. 4x4 in our case)
-    figure, axis = plt.subplots(4, 4)
+    figure, axis = plt.subplots(1, 5)
 
-    for i in range(4):
-        for j in range(4):
-            axis[i, j].imshow(gen_model_imgs[counter])
-            axis[i, j].axis('off') # Just want images, no axis nums
-            counter += 1 # next image (on 4x4 grid)
+    for i in range(5):
+        if counter < 5:
+            axis[i].imshow(gen_model_imgs[counter])
+            axis[i].axis('off') # Just want images, no axis nums
+        counter += 1 # next image (on 4x4 grid)
             
     # Save Generation
     figure.savefig("flask-server/GAN/outputs/{}.png".format(greatest + 1))
 
     # gen_model_imgs[0].savefig("flask-server/GAN/gen_images/{}.png".format("0"))
+
+if __name__ == '__main__':
+    main()

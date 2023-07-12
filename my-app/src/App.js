@@ -6,20 +6,10 @@ import "./App.css";
 import Banner from "./components/Banner/Banner";
 import NavBar from "./components/NavBar/NavBar";
 import Home from "./pages/Home/Home";
+import Start from "./pages/Start/Start";
 
 function App() {
 
-  function train() {
-    fetch("/train");
-  }
-
-  function generate() {
-    fetch("/generate");
-  }
-
-  function get_photo(id) {
-    fetch("/gen_images/" + id);
-  }
 
   return (
     <div className="App">
@@ -50,6 +40,7 @@ function App() {
           <Router>
             <Routes>
               <Route path="/" element={<Home/>} />
+              <Route path="/start" element={<Start/>}/>
             </Routes>
           </Router>
       </div>

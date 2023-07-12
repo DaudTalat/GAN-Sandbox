@@ -44,9 +44,8 @@ def generate():
 # Get Image Complement (e.g. 0 -> newest photo, 1 -> second newest image)
 @app.route("/gen_images/<int:id>")
 def get_photo(id):
-    print("Hey it's ID", id)
-    print(os.getcwd())
-    return send_file(os.getcwd() + "/GAN/gen_images/{}.png".format(id), mimetype="image/gif")
+    num_elements = len(os.listdir(os.getcwd() + "/GAN/gen_images"))
+    return send_file(os.getcwd() + "/GAN/gen_images/{}.png".format(num_elements - id), mimetype="image/gif")
 
 # Test Route
 @app.route("/test")
