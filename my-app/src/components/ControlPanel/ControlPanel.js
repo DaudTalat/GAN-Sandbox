@@ -2,24 +2,40 @@ import React, { useState } from "react";
 import "./ControlPanel.css";
 import { Select, MenuItem } from "@mui/material";
 
-const ControlPanel = () => {
-
+const ControlPanel = ({ onClick }) => {
   function train() {
     fetch("/train");
   }
 
   function generate() {
-    fetch("/generate");
+    fetch("/generate")
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(
+            "There is an issue with your back-end, or filesystem."
+          );
+        }
+        return response.json(); // Assuming the response is in JSON format
+      })
+      .then((data) => {
+        console.log(data);
+        onClick();
+      });
   }
 
   function get_photo(id) {
     fetch("/gen_images/" + id);
   }
 
-  const [res, setRes] = useState("");
+  const [res, setRes] = useState(1);
 
   const handleChange = (event) => {
     setRes(event.target.value);
+    if (res == 1) {
+      fetch("/setres/HR")
+    } else {
+      fetch("/setres/SR")
+    }
   };
 
   return (
@@ -41,13 +57,22 @@ const ControlPanel = () => {
             Train
           </p>
 
-          <button className="button-style" onClick={train}>Train Model</button>
+          <button className="button-style" onClick={train}>
+            Train Model
+          </button>
 
           <p style={{ color: "#696969" }} className="control-help-p">
             Generate
           </p>
 
-          <button className="button-style" onClick={generate}>Generate</button>
+          <button
+            className="button-style"
+            onClick={() => {
+              generate();
+            }}
+          >
+            Generate
+          </button>
         </div>
       </div>
 
@@ -58,9 +83,8 @@ const ControlPanel = () => {
         </p>
 
         <Select className="select-res" value={res} onChange={handleChange}>
-          <MenuItem value={1}>Ten</MenuItem>
-          <MenuItem value={2}>Twenty</MenuItem>
-          <MenuItem value={3}>Thirty</MenuItem>
+          <MenuItem value={1}>128x128 - Standard Resolution</MenuItem>
+          <MenuItem value={2}>256x256 - High Resolution</MenuItem>
         </Select>
       </div>
     </div>

@@ -21,22 +21,21 @@ import numpy as np
 import matplotlib
 matplotlib.use('agg')
 import matplotlib.pyplot as plt
+import h5py
 
 
 saved_image_id = 0 # Need to store this as a static to assign IDs
 epo_ck_max = 0 # Need to declare our checkpoint value for overwrite 
 
 def main():
-    gen, descrim, GAN = export_models()
-
-    save_images(gen)
-
+    gen, descrim, GAN = export_models_128("BobRoss_SR.h5")
+    train(gen, descrim, GAN, 20000, 8, 100, 250, 10)
 
 
-
-def export_models(checkpoint_path=""):
+def export_models_128(checkpoint_name=""):
+    print("Standard-Res Train Function Call.")
     # Adjust these values for higher or lower quality of image
-    img_x_dim = 128
+    img_x_dim = 128 
     img_y_dim = 128
 
     img_dims = (img_x_dim, img_y_dim) # Image resolution
@@ -61,14 +60,13 @@ def export_models(checkpoint_path=""):
         index += 1
 
     # Optmizer and Encoding Latent Space
-    img_shape = (img_x_dim, img_y_dim, 3) # 64x64 image with RGB
+    img_shape = (img_x_dim, img_y_dim, 3) # 256x256 image with RGB
     latent_space_dim = 100 # encoding of features dimensionality
 
-    # Create Generator (since we are using 128 we need to use 128/2^n where n is represented by the number of hidden layers (i.e. 128/2^3 = 16) 
+    # Create Generator (128 is 128/2^n where n is represented by the number of hidden layers (i.e. 128/2^3 = 16) or 32 for 256
     gen_model = Sequential()
 
     # The add() function adds layers to model
-
     # Input Layer (dense) In 
     gen_model.add(Dense(units = 256 * 16 * 16, input_shape=(latent_space_dim, )))
     gen_model.add(LeakyReLU(alpha=0.2)) # This adds leaky relu as activation func for NN layer (should be all the same for the case of our image model)
@@ -126,7 +124,106 @@ def export_models(checkpoint_path=""):
 
     print("Models Exported")
 
-    load_checkpoint(gen_model, discrim_model, GAN_model, checkpoint_path)
+    load_checkpoint(gen_model, discrim_model, GAN_model, checkpoint_name)
+
+    # Debug
+    # print(gen_model.summary())
+    # print(discrim_model.summary())
+    return gen_model, discrim_model, GAN_model
+
+def export_models(checkpoint_name=""):
+    print("High-Res Train Function Call.")
+    # Adjust these values for higher or lower quality of image
+    img_x_dim = 256 # Maybe add 128 option
+    img_y_dim = 256
+
+    img_dims = (img_x_dim, img_y_dim) # Image resolution
+
+    # Relative Paths
+
+    print(os.path.join(os.getcwd(), "flask-server/GAN/training/"))
+    img_path = os.path.join(os.getcwd(), "flask-server/GAN/training/")
+    resized_img_dir = os.path.join(os.getcwd(), "flask-server/GAN/resized_images/") # make sure images are sized to 64x64
+
+    index = 0
+    # Lets ignore any none image files (or non-supported image files)
+    for img in os.listdir(img_path):
+        if not img.endswith((".jpg", ".png", ".jpeg")):
+            continue    
+        
+        resized_img = cv.imread(os.path.join(img_path, img))
+        resized_img = cv.resize(resized_img, img_dims) 
+
+        cv.imwrite(resized_img_dir + "{}.png".format(index), resized_img) 
+
+        index += 1
+
+    # Optmizer and Encoding Latent Space
+    img_shape = (img_x_dim, img_y_dim, 3) # 256x256 image with RGB
+    latent_space_dim = 100 # encoding of features dimensionality
+
+    # Create Generator (128 is 128/2^n where n is represented by the number of hidden layers (i.e. 128/2^3 = 16) or 32 for 256
+    gen_model = Sequential()
+
+    # The add() function adds layers to model
+    # Input Layer (dense) In 
+    gen_model.add(Dense(units = 256 * 32 * 32, input_shape=(latent_space_dim, )))
+    gen_model.add(LeakyReLU(alpha=0.2)) # This adds leaky relu as activation func for NN layer (should be all the same for the case of our image model)
+    gen_model.add(Reshape((32,32,256))) # Needed as we switch to convolutional layers, to bridge gap (Dense -> Conv / 1D -> 4D)
+
+    # Hidden Layers (conv2Dtrans)
+    # image upsampling layer | 128 filters which are 4x4 | stride of (2,2) to increase detail (smaller steps) | padding to perserve input image
+    # Input space increases by 2x 
+    gen_model.add(Conv2DTranspose(filters=128, kernel_size=(4,4), strides=(2,2), padding="same"))  
+    gen_model.add(LeakyReLU(alpha=0.2))
+
+    gen_model.add(Conv2DTranspose(filters=128, kernel_size=(4,4), strides=(2,2), padding="same"))  
+    gen_model.add(LeakyReLU(alpha=0.2))
+
+    gen_model.add(Conv2DTranspose(filters=128, kernel_size=(4,4), strides=(2,2), padding="same"))  
+    gen_model.add(LeakyReLU(alpha=0.2))
+
+    # Output Layer (conv2D)
+    gen_model.add(Conv2D(filters=3, kernel_size=(4,4), activation="tanh", padding="same"))
+
+    # Create Descriminator
+    discrim_model = Sequential()
+
+    # Input Layer (Generated Image)
+    discrim_model.add(Conv2D(filters=64, kernel_size=(4,4), padding="same", input_shape=img_shape))
+    discrim_model.add(LeakyReLU(alpha=0.2))
+
+    # Hidden Layer (Extract Features)
+    discrim_model.add(Conv2D(filters=128, kernel_size=(4,4), padding="same"))
+    discrim_model.add(LeakyReLU(alpha=0.2))
+
+    discrim_model.add(Conv2D(filters=128, kernel_size=(4,4), padding="same"))
+    discrim_model.add(LeakyReLU(alpha=0.2))
+
+    discrim_model.add(Conv2D(filters=256, kernel_size=(4,4), padding="same"))
+    discrim_model.add(LeakyReLU(alpha=0.2))
+
+    # Output (Flatten)
+    discrim_model.add(Flatten())
+    discrim_model.add(Dropout(0.4))
+    discrim_model.add(Dense(units=1, activation="sigmoid"))
+
+    # COMPILE
+    discrim_model.compile(loss="binary_crossentropy", optimizer=Adam(learning_rate=0.0002), metrics=["accuracy"])
+
+    # Make GAN
+    GAN_model = Sequential()
+    discrim_model.trainable = False # We don't want to train descriminator while training GAN
+
+    # Assemble 
+    GAN_model.add(gen_model)
+    GAN_model.add(discrim_model)
+
+    GAN_model.compile(loss="binary_crossentropy", optimizer=Adam(learning_rate=0.0002), metrics=["accuracy"])
+
+    print("Models Exported")
+
+    load_checkpoint(gen_model, discrim_model, GAN_model, checkpoint_name)
 
     # Debug
     # print(gen_model.summary())
@@ -145,8 +242,8 @@ def load_checkpoint(generator: Sequential, discriminator: Sequential, GAN: Seque
         greatest = -1
 
         for ck in os.listdir(os.getcwd() + "/flask-server/GAN/checkpoints"):
-
-            ck_num = int(ck.split("_")[1].strip(".h5"))
+            if (ck.split("_")[1].removesuffix(".h5")).isdigit():
+                ck_num = int(ck.split("_")[1].removesuffix(".h5"))
             if ck_num > greatest:
                 greatest = ck_num
 
@@ -159,14 +256,16 @@ def load_checkpoint(generator: Sequential, discriminator: Sequential, GAN: Seque
 
     else: 
         checkpoint_path = os.getcwd() + "/flask-server/GAN/checkpoints/{}".format(checkpoint_path) # Use highest increment of ck
+        print(checkpoint_path)
     
     GAN.load_weights(checkpoint_path)
     generator.set_weights(GAN.layers[0].get_weights())
     discriminator.set_weights(GAN.layers[1].get_weights())
+    print("Checkpoint Loaded.")
 
 # The train function is responsible for training the 
 def train(generator : Sequential, discriminator: Sequential, GAN : Sequential, epoch, batch=32, latent_space_dim=100, output_interval=250, checkpoint_interval=1000): 
-    
+    print("Training Function Call.")
     checkpoint_dir = os.path.join(os.getcwd(), "flask-server/GAN/checkpoints/")
 
     real_lables = np.ones((batch, 1))

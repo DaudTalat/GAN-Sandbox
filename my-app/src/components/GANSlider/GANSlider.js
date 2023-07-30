@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import "./GANSlider.css";
 
-const GANSlider = () => {
+const GANSlider = (count) => {
 
   const [img1, setImg1] = useState('');
   const [img2, setImg2] = useState('');
@@ -9,7 +9,6 @@ const GANSlider = () => {
   const [img4, setImg4] = useState('');
   const [img5, setImg5] = useState('');
   const [selectedPhoto, setSelectedPhoto] = useState(null);
-
 
   useEffect(() => {
     // Fetch Image 1
@@ -54,7 +53,7 @@ const GANSlider = () => {
         setImg5(img5);
       });
 
-  }, []);
+  }, [count]);
 
 
   const selectPhoto = (photo) => {
