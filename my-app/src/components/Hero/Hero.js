@@ -13,7 +13,7 @@ const Hero = () => {
           </p>
           <div className="buttons">
             <a href="/start" className="rounded-button">Use Local Machine</a>
-            <a className="rounded-button">Use Google Colab</a>
+            <a href="https://colab.research.google.com/drive/1fUyse9L1EWpCv04XaFRv-Jr9snFkWVBt?usp=sharing" className="rounded-button">Use Google Colab</a>
           </div>
         </div>
       </div>

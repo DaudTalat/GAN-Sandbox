@@ -3,8 +3,8 @@ import os
 from flask import Flask, jsonify
 from flask import send_file
 from GAN import GAN
-import sys
 import multiprocessing
+import tensorflow as tf
 
 app = Flask(__name__)
 process_thread = None
@@ -41,7 +41,6 @@ def start_training():
 # Note: We are using multi-processing instead of threads to release the lock
 @app.route("/train")
 def train():
-    print("Starting Training...")
 
     try:
         global process_thread
@@ -49,11 +48,14 @@ def train():
         if process_thread is None or not process_thread.is_alive():
             process_thread = multiprocessing.Process(target=start_training)
             process_thread.start()
+            print("Training Started...")
             return jsonify(message="Training Started...")
         else:
             process_thread.terminate()
             process_thread.join()
             process_thread = None
+            tf.keras.backend.clear_session()
+            print("Training Stopped.")
             return jsonify(message="Training Stopped.")
     except:
         print("Make sure you entered the checkpoint name correctly.")
@@ -65,25 +67,29 @@ def train():
 def generate():
     print("Generating Images...")
 
-    if process_thread is None or not process_thread.is_alive():
-        process_thread = multiprocessing.Process(target=start_training)
-        process_thread.start()
+    global process_thread
+    if process_thread != None:
+        if process_thread or process_thread.is_alive():
+                process_thread.terminate()
+                process_thread.join()
+                process_thread = None
+                print("Stopping Training.")
     
     try:
         if resolution == "SR":
             try:
-                print("Training on SR.")
+                print("Generating on SR.")
                 gen_model, _, _ =  GAN.export_models_128(checkpoint_name)
             except:
-                print("Error: Be sure to use HQ model when training HQ images.")
+                print("Error: Be sure to use HQ model when generating HQ images.")
                 gen_model, _, _ = GAN.export_models(checkpoint_name)
 
         elif resolution == "HR":
             try:
-                print("Training on HR.")
+                print("Generating on HR.")
                 gen_model, _, _ =  GAN.export_models(checkpoint_name)
             except:
-                print("Error: Be sure to use SR model when training SR images.")
+                print("Error: Be sure to use SR model when generating SR images.")
                 gen_model, _, _ = GAN.export_models_128(checkpoint_name)
 
         GAN.save_images(gen_model)

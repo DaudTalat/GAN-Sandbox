@@ -3,8 +3,11 @@ import "./ControlPanel.css";
 import { Select, MenuItem } from "@mui/material";
 
 const ControlPanel = ({ onClick }) => {
-  function train() {
+  const [isTraining, setIsTraining] = useState(false)
+
+  function toggleTraining() {
     fetch("/train");
+    setIsTraining(!isTraining); // Toggle training status
   }
 
   function generate() {
@@ -57,8 +60,8 @@ const ControlPanel = ({ onClick }) => {
             Train
           </p>
 
-          <button className="button-style" onClick={train}>
-            Train Model
+          <button className="button-style" onClick={toggleTraining}>
+            {isTraining ? "Stop Training": "Start Training"}
           </button>
 
           <p style={{ color: "#696969" }} className="control-help-p">

@@ -22,7 +22,10 @@ body {
 }
 
 .logo {
-    
+}
+
+.logo_img {
+    height: 50px;
 }
 
 .nav-links {

@@ -7,7 +7,6 @@
 import os
 import cv2 as cv # Image processing (COMP VISION LIB)
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' # Remove Cluttering for Debug
-#from tensorflow.python.keras.optimizer_v2.adam import Adam
 from tensorflow.python.keras.layers import LeakyReLU
 from keras.layers import Dropout # For regularization
 from keras.layers import Reshape
@@ -21,8 +20,6 @@ import numpy as np
 import matplotlib
 matplotlib.use('agg')
 import matplotlib.pyplot as plt
-import h5py
-
 
 saved_image_id = 0 # Need to store this as a static to assign IDs
 epo_ck_max = 0 # Need to declare our checkpoint value for overwrite 
@@ -239,7 +236,8 @@ def load_checkpoint(generator: Sequential, discriminator: Sequential, GAN: Seque
 
     if checkpoint_path == "": # If this is not triggered we are using a specific ck (e.g. EdwardHopper.h5)
 
-        greatest = -1
+        greatest = 0
+        ck_num = 0
 
         for ck in os.listdir(os.getcwd() + "/flask-server/GAN/checkpoints"):
             if (ck.split("_")[1].removesuffix(".h5")).isdigit():
@@ -247,7 +245,7 @@ def load_checkpoint(generator: Sequential, discriminator: Sequential, GAN: Seque
             if ck_num > greatest:
                 greatest = ck_num
 
-        if greatest == -1:
+        if greatest == 0:
             return # Produce new ck (there are none) | Checkpoint is 0
         
         else:
