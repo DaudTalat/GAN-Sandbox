@@ -4,14 +4,12 @@ from flask import Flask, jsonify
 from flask import send_file
 from GAN import GAN
 import multiprocessing
-import tensorflow as tf
 
 app = Flask(__name__)
 process_thread = None
 
 checkpoint_name = ""
 resolution = "SR"
-
 
 # Helper Function
 # Creates and trains model
@@ -37,6 +35,27 @@ def start_training():
 
     GAN.train(gen_model, descrim_model, GAN_model, 29000, 16, 100, 250, 10)
 
+# Helper Function 
+# Generates images
+def start_generating():
+    if resolution == "SR":
+        try:
+            print("Generating on SR.")
+            gen_model, _, _ =  GAN.export_models_128(checkpoint_name)
+        except:
+            print("Error: Be sure to use HQ model when generating HQ images.")
+            gen_model, _, _ = GAN.export_models(checkpoint_name)
+
+    elif resolution == "HR":
+        try:
+            print("Generating on HR.")
+            gen_model, _, _ =  GAN.export_models(checkpoint_name)
+        except:
+            print("Error: Be sure to use SR model when generating SR images.")
+            gen_model, _, _ = GAN.export_models_128(checkpoint_name)
+
+    GAN.save_images(gen_model)
+
 # Trains Generative Image AI
 # Note: We are using multi-processing instead of threads to release the lock
 @app.route("/train")
@@ -45,18 +64,26 @@ def train():
     try:
         global process_thread
 
-        if process_thread is None or not process_thread.is_alive():
+        if process_thread != None:
+            if process_thread or process_thread.is_alive():
+                process_thread.terminate()
+                process_thread.join()
+                process_thread = None
+                print("Stopped Training.")
+                return jsonify("Stopped Training.")
+
+        else:
+            if process_thread != None:
+                if process_thread or process_thread.is_alive():
+                    process_thread.terminate()
+                    process_thread.join()
+                    process_thread = None
+
             process_thread = multiprocessing.Process(target=start_training)
             process_thread.start()
             print("Training Started...")
             return jsonify(message="Training Started...")
-        else:
-            process_thread.terminate()
-            process_thread.join()
-            process_thread = None
-            tf.keras.backend.clear_session()
-            print("Training Stopped.")
-            return jsonify(message="Training Stopped.")
+
     except:
         print("Make sure you entered the checkpoint name correctly.")
 
@@ -76,23 +103,12 @@ def generate():
                 print("Stopping Training.")
     
     try:
-        if resolution == "SR":
-            try:
-                print("Generating on SR.")
-                gen_model, _, _ =  GAN.export_models_128(checkpoint_name)
-            except:
-                print("Error: Be sure to use HQ model when generating HQ images.")
-                gen_model, _, _ = GAN.export_models(checkpoint_name)
+        process_thread = multiprocessing.Process(target=start_generating)
+        process_thread.start()
+        process_thread.terminate()
+        process_thread.join()
+        process_thread = None
 
-        elif resolution == "HR":
-            try:
-                print("Generating on HR.")
-                gen_model, _, _ =  GAN.export_models(checkpoint_name)
-            except:
-                print("Error: Be sure to use SR model when generating SR images.")
-                gen_model, _, _ = GAN.export_models_128(checkpoint_name)
-
-        GAN.save_images(gen_model)
 
     except:
         print("Make sure you entered the checkpoint name correctly.")

@@ -4,15 +4,15 @@ import Hero from "../../components/Hero/Hero";
 import "./Home.css";
 
 // art
-import gogh from "../../assets/images/vangogh.jpg";
-import ross from "../../assets/images/bobross.png";
-import monet from "../../assets/images/claudemonet.jpg";
+import gogh from "../../assets/images/gan1.png";
+import ross from "../../assets/images/gan2.png";
+import ivan from "../../assets/images/gan3.png";
 
 const Home = () => {
     const multiple_slides = [
-        {url: gogh, title: "Van Gogh"},
-        {url: ross, title: "Bob Ross"},
-        {url: monet, title: "Claude Monet"}
+        {url: gogh, title: "gan1"},
+        {url: ross, title: "gan2"},
+        {url: ivan, title: "gan3"}
     ];
 
     const containerStyle = {

@@ -1,7 +1,7 @@
 .start-container {
     display: flex;
     justify-content: center;
-    height: 800px;
+    height: 600px;
     width: auto;
 }
 
@@ -27,13 +27,5 @@
 .start-paragraph {
     text-align: center;
     color: rgb(97, 97, 97);
-    margin-bottom: 20px;
+    margin-bottom: 30px;
 }
-
-/* .gen-image {
-    height: 500px;
-    width: 600px;
-
-    border: 1px solid rgba(97, 97, 97, 0.719);
-    border-radius: 40px;
-} */

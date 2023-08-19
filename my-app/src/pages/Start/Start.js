@@ -2,7 +2,6 @@ import { React, useState } from "react";
 import "./Start.css";
 
 import ControlPanel from "../../components/ControlPanel/ControlPanel";
-import GeneratedImage from "../../components/GeneratedImage/GeneratedImage";
 import GANSlider from "../../components/GANSlider/GANSlider";
 import CheckpointPanel from "../../components/CheckpointPanel/CheckpointPanel";
 

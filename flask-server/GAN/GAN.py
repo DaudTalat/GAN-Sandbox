@@ -30,6 +30,7 @@ def main():
 
 
 def export_models_128(checkpoint_name=""):
+
     print("Standard-Res Train Function Call.")
     # Adjust these values for higher or lower quality of image
     img_x_dim = 128 
@@ -263,6 +264,7 @@ def load_checkpoint(generator: Sequential, discriminator: Sequential, GAN: Seque
 
 # The train function is responsible for training the 
 def train(generator : Sequential, discriminator: Sequential, GAN : Sequential, epoch, batch=32, latent_space_dim=100, output_interval=250, checkpoint_interval=1000): 
+
     print("Training Function Call.")
     checkpoint_dir = os.path.join(os.getcwd(), "flask-server/GAN/checkpoints/")
 
@@ -364,7 +366,6 @@ def save_images(generator : Sequential):
     # Save Generation
     figure.savefig("flask-server/GAN/outputs/{}.png".format(greatest + 1))
 
-    # gen_model_imgs[0].savefig("flask-server/GAN/gen_images/{}.png".format("0"))
 
 if __name__ == '__main__':
     main()

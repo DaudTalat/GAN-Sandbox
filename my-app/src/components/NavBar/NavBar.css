@@ -21,11 +21,8 @@ body {
     border: 1px solid rgb(233, 228, 228);
 }
 
-.logo {
-}
-
 .logo_img {
-    height: 50px;
+    height: 40px;
 }
 
 .nav-links {
@@ -50,7 +47,7 @@ body {
     background-color: #2d5eff;
     color: #f0f5fa;
     border-radius: 20px;
-    padding: 6px 24px;
+    padding: 7px 24px;
     opacity: 1;
 }
 
